@@ -1,0 +1,10 @@
+{
+  "name": "Real-Time Chat wait for update",
+  "description": "A elegant and responsive real-time chat application powered by WebSockets, featuring multiple chat rooms, live user presence tracking, and typing indicators.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
