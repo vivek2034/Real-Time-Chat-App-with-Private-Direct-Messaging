@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { RoomInfo, ChatUser } from "../types";
-import { MessageSquare as MsgIcon, Hash as HashIcon, Users as UsersIcon, Plus as PlusIcon, LogOut as LogOutIcon, ChevronRight as ChevronIcon, Compass as CompassIcon, MessageCircle as MessageCircleIcon } from "lucide-react";
+import { MessageSquare as MsgIcon, Hash as HashIcon, Users as UsersIcon, Plus as PlusIcon, LogOut as LogOutIcon, ChevronRight as ChevronIcon, Compass as CompassIcon, MessageCircle as MessageCircleIcon, Globe as GlobeIcon, Shuffle as ShuffleIcon, Copy as CopyIcon, Check as CheckIcon } from "lucide-react";
 
 interface SidebarProps {
   currentUser: ChatUser;
@@ -10,6 +10,8 @@ interface SidebarProps {
   allOnlineUsers: ChatUser[];
   unreadDMs: Record<string, number>;
   activeDMSessions: string[];
+  currentSlugPath?: string;
+  onRotateSlug?: (type?: "alphanumeric" | "blended") => void;
   onSwitchRoom: (newRoom: string) => void;
   onStartDM: (otherUser: ChatUser) => void;
   onLogout: () => void;
@@ -22,6 +24,8 @@ export default function Sidebar({
   allOnlineUsers = [],
   unreadDMs = {},
   activeDMSessions = [],
+  currentSlugPath,
+  onRotateSlug,
   onSwitchRoom,
   onStartDM,
   onLogout,
@@ -29,6 +33,27 @@ export default function Sidebar({
   const [newRoomName, setNewRoomName] = useState("");
   const [isAddingRoom, setIsAddingRoom] = useState(false);
   const [roomError, setRoomError] = useState("");
+  const [copiedLink, setCopiedLink] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      const fullUrl = `${window.location.origin}${currentSlugPath || ""}`;
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(fullUrl);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = fullUrl;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
+    } catch (e) {
+      console.error("Failed to copy link:", e);
+    }
+  };
 
   const handleAddRoomSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -286,6 +311,37 @@ export default function Sidebar({
           </div>
         )}
       </div>
+
+      {/* Dynamic 3-Slug Link Bar */}
+      {currentSlugPath && (
+        <div className="mx-4 mb-2 p-2.5 bg-indigo-50/50 border border-indigo-100/70 rounded-xl flex items-center justify-between text-xs">
+          <div className="flex items-center gap-2 min-w-0">
+            <GlobeIcon size={14} className="text-indigo-600 shrink-0" />
+            <div className="min-w-0">
+              <span className="block text-[9px] font-bold uppercase tracking-wider text-indigo-400">Dynamic 3-Slug URL</span>
+              <span className="block font-mono text-[11px] font-semibold text-gray-800 truncate" title={currentSlugPath}>
+                {currentSlugPath}
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-1 shrink-0 ml-1">
+            <button
+              onClick={() => onRotateSlug && onRotateSlug()}
+              className="p-1 text-gray-400 hover:text-indigo-600 hover:bg-white rounded-md transition-all cursor-pointer"
+              title="Rotate to 3 new random slugs"
+            >
+              <ShuffleIcon size={12} />
+            </button>
+            <button
+              onClick={handleCopy}
+              className="p-1 text-gray-400 hover:text-indigo-600 hover:bg-white rounded-md transition-all cursor-pointer"
+              title="Copy dynamic link"
+            >
+              {copiedLink ? <CheckIcon size={12} className="text-emerald-500" /> : <CopyIcon size={12} />}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* User Footer Profile */}
       <div className="p-4 bg-gray-50/50 border-t border-gray-100 flex items-center justify-between gap-3 shrink-0">
