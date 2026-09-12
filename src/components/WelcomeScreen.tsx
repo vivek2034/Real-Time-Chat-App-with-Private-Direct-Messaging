@@ -1,11 +1,13 @@
 import React, { useState } from "react";
 import { motion } from "motion/react";
-import { MessageSquare, ArrowRight, Sparkles, Hash } from "lucide-react";
+import { MessageSquare, ArrowRight, Sparkles, Hash, Globe, Shuffle, Copy, Check } from "lucide-react";
 import { RoomInfo } from "../types";
 
 interface WelcomeScreenProps {
   onJoin: (username: string, color: string, room: string) => void;
   availableRooms: RoomInfo[];
+  currentSlugPath?: string;
+  onRotateSlug?: (type?: "alphanumeric" | "blended") => void;
 }
 
 const PASTEL_COLORS = [
@@ -19,13 +21,39 @@ const PASTEL_COLORS = [
   { name: "Slate Storm", hex: "#475569" },
 ];
 
-export default function WelcomeScreen({ onJoin, availableRooms }: WelcomeScreenProps) {
+export default function WelcomeScreen({
+  onJoin,
+  availableRooms,
+  currentSlugPath,
+  onRotateSlug,
+}: WelcomeScreenProps) {
   const [username, setUsername] = useState("");
   const [selectedColor, setSelectedColor] = useState(PASTEL_COLORS[0].hex);
   const [selectedRoom, setSelectedRoom] = useState("General");
   const [customRoom, setCustomRoom] = useState("");
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
   const [error, setError] = useState("");
+  const [copiedLink, setCopiedLink] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      const fullUrl = `${window.location.origin}${currentSlugPath || ""}`;
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(fullUrl);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = fullUrl;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
+    } catch (e) {
+      console.error("Failed to copy link:", e);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -219,6 +247,40 @@ export default function WelcomeScreen({ onJoin, availableRooms }: WelcomeScreenP
             <span>Enter Conversation</span>
             <ArrowRight size={16} />
           </button>
+
+          {/* Dynamic 3-Slug Link Display */}
+          {currentSlugPath && (
+            <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500 bg-gray-50/75 rounded-xl px-3 py-2 border">
+              <div className="flex items-center gap-2 overflow-hidden">
+                <Globe size={13} className="text-indigo-600 shrink-0" />
+                <div className="flex flex-col overflow-hidden">
+                  <span className="text-[10px] text-gray-400 font-medium">Dynamic 3-Slug URL</span>
+                  <span className="font-mono text-[11px] font-semibold text-gray-800 truncate" title={currentSlugPath}>
+                    {currentSlugPath}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1 shrink-0 ml-2">
+                <button
+                  type="button"
+                  onClick={() => onRotateSlug && onRotateSlug()}
+                  className="p-1.5 text-gray-500 hover:text-indigo-600 hover:bg-white rounded-lg border border-transparent hover:border-gray-200 transition-all cursor-pointer"
+                  title="Rotate to 3 new random slugs"
+                >
+                  <Shuffle size={13} />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCopy}
+                  className="p-1.5 text-gray-500 hover:text-indigo-600 hover:bg-white rounded-lg border border-transparent hover:border-gray-200 transition-all cursor-pointer"
+                  title="Copy dynamic link"
+                >
+                  {copiedLink ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
+                </button>
+              </div>
+            </div>
+          )}
         </form>
       </motion.div>
     </div>
