@@ -10,9 +10,13 @@ import { ChatUser, ChatMessage, RoomInfo, TypingUser } from "./types";
 import WelcomeScreen from "./components/WelcomeScreen";
 import Sidebar from "./components/Sidebar";
 import ChatArea from "./components/ChatArea";
+import { getOrCreateThreeSlugPath, rotateThreeSlugUrl } from "./utils/slug";
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<ChatUser | null>(null);
+  const [currentSlugPath, setCurrentSlugPath] = useState<string>(() => {
+    return getOrCreateThreeSlugPath();
+  });
   const [rooms, setRooms] = useState<RoomInfo[]>([
     { name: "General", count: 0 },
     { name: "Tech Talk", count: 0 },
@@ -44,6 +48,20 @@ export default function App() {
   useEffect(() => {
     currentUserRef.current = currentUser;
   }, [currentUser]);
+
+  // Automatically turn the link into 3 random slugs on initial visit/load
+  useEffect(() => {
+    const activePath = getOrCreateThreeSlugPath();
+    if (window.location.pathname !== activePath) {
+      window.history.replaceState(null, "", `${activePath}${window.location.search}${window.location.hash}`);
+    }
+    setCurrentSlugPath(activePath);
+  }, []);
+
+  const handleRotateSlug = (type: "alphanumeric" | "blended" = "alphanumeric") => {
+    const newPath = rotateThreeSlugUrl(type);
+    setCurrentSlugPath(newPath);
+  };
 
   // Derive WebSocket URL dynamically based on environment
   const getSocketUrl = () => {
@@ -247,11 +265,17 @@ export default function App() {
   };
 
   const handleJoin = (username: string, color: string, room: string) => {
+    const newPath = rotateThreeSlugUrl();
+    setCurrentSlugPath(newPath);
     connectSocket(username, color, room);
   };
 
   const handleSwitchRoom = (newRoom: string) => {
     if (!currentUser) return;
+
+    // Rotate slugs on room transition
+    const newPath = rotateThreeSlugUrl();
+    setCurrentSlugPath(newPath);
 
     if (newRoom.startsWith("dm:")) {
       setUnreadDMs((prev) => {
@@ -347,6 +371,9 @@ export default function App() {
   };
 
   const handleLogout = () => {
+    const newPath = rotateThreeSlugUrl();
+    setCurrentSlugPath(newPath);
+
     if (socketRef.current) {
       socketRef.current.close();
     }
@@ -410,6 +437,8 @@ export default function App() {
       <WelcomeScreen
         onJoin={handleJoin}
         availableRooms={rooms}
+        currentSlugPath={currentSlugPath}
+        onRotateSlug={handleRotateSlug}
       />
     );
   }
@@ -455,6 +484,8 @@ export default function App() {
           allOnlineUsers={allOnlineUsers}
           unreadDMs={unreadDMs}
           activeDMSessions={activeDMSessions}
+          currentSlugPath={currentSlugPath}
+          onRotateSlug={handleRotateSlug}
           onSwitchRoom={handleSwitchRoom}
           onStartDM={handleStartDM}
           onLogout={handleLogout}
@@ -498,6 +529,8 @@ export default function App() {
                   allOnlineUsers={allOnlineUsers}
                   unreadDMs={unreadDMs}
                   activeDMSessions={activeDMSessions}
+                  currentSlugPath={currentSlugPath}
+                  onRotateSlug={handleRotateSlug}
                   onSwitchRoom={handleSwitchRoom}
                   onStartDM={handleStartDM}
                   onLogout={handleLogout}
@@ -517,6 +550,8 @@ export default function App() {
           activeUsersCount={activeUsers.length}
           allOnlineUsers={allOnlineUsers}
           knownUsers={knownUsers}
+          currentSlugPath={currentSlugPath}
+          onRotateSlug={handleRotateSlug}
           onSendMessage={handleSendMessage}
           onReact={handleReact}
           onTyping={handleTyping}
