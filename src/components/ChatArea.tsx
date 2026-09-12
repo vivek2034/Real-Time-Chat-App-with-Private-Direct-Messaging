@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Send, Search, Smile, Volume2, VolumeX, Sparkles, Hash, Users, PenTool, Image, Trash2, Code, Eye, EyeOff, Paperclip, Camera, CameraOff, Video } from "lucide-react";
+import { Send, Search, Smile, Volume2, VolumeX, Sparkles, Hash, Users, PenTool, Image, Trash2, Code, Eye, EyeOff, Paperclip, Camera, CameraOff, Video, Globe, Shuffle, Copy, Check } from "lucide-react";
 import { ChatMessage, ChatUser, TypingUser } from "../types";
 import MessageItem from "./MessageItem";
 
@@ -11,6 +11,8 @@ interface ChatAreaProps {
   activeUsersCount: number;
   allOnlineUsers?: ChatUser[];
   knownUsers?: Record<string, { username: string; color: string }>;
+  currentSlugPath?: string;
+  onRotateSlug?: (type?: "alphanumeric" | "blended") => void;
   onSendMessage: (text: string, image?: string) => void;
   onReact: (messageId: string, emoji: string) => void;
   onTyping: (isTyping: boolean) => void;
@@ -26,6 +28,8 @@ export default function ChatArea({
   activeUsersCount,
   allOnlineUsers = [],
   knownUsers = {},
+  currentSlugPath,
+  onRotateSlug,
   onSendMessage,
   onReact,
   onTyping,
@@ -34,6 +38,7 @@ export default function ChatArea({
   const [inputText, setInputText] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [copiedLink, setCopiedLink] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -72,6 +77,26 @@ export default function ChatArea({
     }
     setIsCameraOpen(false);
     setCameraError(null);
+  };
+
+  const handleCopyLink = async () => {
+    try {
+      const fullUrl = `${window.location.origin}${currentSlugPath || ""}`;
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(fullUrl);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = fullUrl;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
+    } catch (e) {
+      console.error("Failed to copy link:", e);
+    }
   };
 
   const capturePhoto = () => {
@@ -345,8 +370,32 @@ export default function ChatArea({
           )}
         </div>
 
-        {/* Header Actions (Search & Audio & Info) */}
-        <div className="flex items-center gap-3">
+        {/* Header Actions (Search & Audio & Dynamic 3-Slug URL) */}
+        <div className="flex items-center gap-2.5">
+          {/* Dynamic 3-Slug URL widget */}
+          {currentSlugPath && (
+            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 bg-gray-50 border border-gray-200 rounded-lg text-xs transition-colors">
+              <Globe size={13} className="text-indigo-600 shrink-0" />
+              <span className="font-mono text-[11px] text-gray-700 font-semibold tracking-tight max-w-[150px] md:max-w-[210px] truncate" title={currentSlugPath}>
+                {currentSlugPath}
+              </span>
+              <button
+                onClick={() => onRotateSlug && onRotateSlug()}
+                className="p-1 text-gray-400 hover:text-indigo-600 rounded transition-colors cursor-pointer"
+                title="Rotate to 3 new random slugs"
+              >
+                <Shuffle size={12} />
+              </button>
+              <button
+                onClick={handleCopyLink}
+                className="p-1 text-gray-400 hover:text-indigo-600 rounded transition-colors cursor-pointer"
+                title="Copy dynamic link"
+              >
+                {copiedLink ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
+              </button>
+            </div>
+          )}
+
           {/* Local Search Input */}
           <div className="relative">
             <input
